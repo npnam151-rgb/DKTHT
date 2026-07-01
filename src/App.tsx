@@ -191,6 +191,25 @@ export default function App() {
                           />
                         </div>
                       </div>
+                      
+                      <div>
+                        <label htmlFor="address" className="block text-sm font-semibold text-slate-700 mb-1.5">
+                          Địa chỉ thường trú <span className="text-[#c1272d]">*</span>
+                        </label>
+                        <div className="relative">
+                          <textarea
+                            id="address"
+                            name="address"
+                            required
+                            rows={2}
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            placeholder="Nhập địa chỉ đầy đủ..."
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 outline-none transition-all pl-10 resize-none"
+                          />
+                          <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -252,25 +271,6 @@ export default function App() {
                             />
                             <Mail className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                           </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="address" className="block text-sm font-semibold text-slate-700 mb-1.5">
-                          Địa chỉ thường trú <span className="text-[#c1272d]">*</span>
-                        </label>
-                        <div className="relative">
-                          <textarea
-                            id="address"
-                            name="address"
-                            required
-                            rows={2}
-                            value={formData.address}
-                            onChange={handleInputChange}
-                            placeholder="Nhập địa chỉ đầy đủ..."
-                            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:border-[#1e3a5f] focus:ring-2 focus:ring-[#1e3a5f]/20 outline-none transition-all pl-10 resize-none"
-                          />
-                          <MapPin className="w-5 h-5 text-slate-400 absolute left-3 top-3" />
                         </div>
                       </div>
                     </div>
