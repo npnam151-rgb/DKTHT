@@ -1,0 +1,6 @@
+{
+  "name": "Enrollment QR Generator",
+  "description": "Student enrollment form that generates a bank transfer QR code.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
