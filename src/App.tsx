@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { School, User, IdCard, MapPin, Phone, Mail, QrCode, ArrowLeft, CheckCircle2, ChevronRight, GraduationCap, Coins } from 'lucide-react';
+import { School, User, IdCard, MapPin, Phone, Mail, QrCode, ArrowLeft, CheckCircle2, ChevronRight, GraduationCap, Coins, Check, Loader2 } from 'lucide-react';
 import { removeVietnameseTones } from './utils/string';
 import { BANK_CONFIG } from './config';
 import { cn } from './lib/utils';
+import { appendToGoogleSheet } from './utils/googleSheets';
 
 type EnrollmentData = {
   studentName: string;
@@ -45,6 +46,10 @@ export default function App() {
   const [qrUrl, setQrUrl] = useState('');
   const [transferContent, setTransferContent] = useState('');
 
+  // Google Sheets integration state
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -72,22 +77,53 @@ export default function App() {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const cleanName = removeVietnameseTones(formData.studentName).toUpperCase();
-    const cleanId = formData.studentId.trim();
-    const content = `K29THT ${cleanId} ${cleanName}`.replace(/\s+/g, ' ');
-    
-    setTransferContent(content);
+    setIsSaving(true);
+    setSaveError(null);
 
-    const url = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
-    setQrUrl(url);
-    setIsSubmitted(true);
+    try {
+      const cleanName = removeVietnameseTones(formData.studentName).toUpperCase();
+      const cleanId = formData.studentId.trim();
+      const content = `K29THT ${cleanId} ${cleanName}`.replace(/\s+/g, ' ');
+
+      const selectedFeesText = selectedFees
+        .map(id => FEES.find(f => f.id === id)?.name)
+        .filter(Boolean)
+        .join(', ');
+      
+      const totalAmountText = formatCurrency(totalAmount);
+
+      // Save to Google Sheet using Google Apps Script Web App
+      await appendToGoogleSheet({
+        studentName: formData.studentName,
+        studentId: formData.studentId,
+        studentCccd: formData.studentCccd,
+        address: formData.address,
+        parentName: formData.parentName,
+        parentPhone: formData.parentPhone,
+        parentEmail: formData.parentEmail,
+        selectedFeesText,
+        totalAmountText,
+        transferContent: content,
+      });
+
+      // Set state and move to payment step
+      setTransferContent(content);
+      const url = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_ID}-${BANK_CONFIG.ACCOUNT_NO}-compact2.png?amount=${totalAmount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
+      setQrUrl(url);
+      setIsSubmitted(true);
+    } catch (err: any) {
+      console.error('Lỗi khi đăng ký:', err);
+      setSaveError(err.message || 'Không thể đồng bộ dữ liệu vào hệ thống. Quý phụ huynh vui lòng kiểm tra kết nối mạng và thử lại.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleReset = () => {
     setIsSubmitted(false);
+    setSaveError(null);
   };
 
   return (
@@ -370,12 +406,34 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="pt-4">
+                  {saveError && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 text-[#c1272d] text-sm rounded-xl flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-[#c1272d] mt-1.5 shrink-0" />
+                      <p className="font-medium">{saveError}</p>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
                     <button
                       type="submit"
-                      className="w-full bg-[#1e3a5f] hover:bg-[#152a45] text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
+                      disabled={isSaving}
+                      className={cn(
+                        "w-full text-white font-semibold py-4 px-6 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group",
+                        isSaving 
+                          ? "bg-slate-400 cursor-not-allowed" 
+                          : "bg-[#1e3a5f] hover:bg-[#152a45] hover:shadow-lg"
+                      )}
                     >
-                      Đăng ký
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Đang đăng ký...
+                        </>
+                      ) : (
+                        <>
+                          Đăng ký
+                        </>
+                      )}
                     </button>
                   </div>
                 </motion.form>
